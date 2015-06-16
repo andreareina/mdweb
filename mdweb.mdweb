@@ -50,6 +50,70 @@ def weave(self):
     return '\n'.join(woven)
 @
 
+# tangling
+*Tangling* the specified root chunk expands it into the final code.
+We expect the root chunk to contain references to other chunks which must be expanded,
+which themselves may contain references to other chunks which must be expanded and so on.
+One way to resolve the dependencies is to do a topological sort on the dependency graph and expand chunks in that order.
+
+<<tangle>>=
+
+def __expansion_order(self, root):
+    """Chunks in the order they should be processed to satisfy dependencies"""
+    result = []
+    visited = set()
+
+    def dfs(v):
+        if v not in visited:
+            visited.add(v)
+            for next in [e[1] for e in self.dependencies if e[0] == v]:
+                dfs(next)
+            result.append(v)
+
+    dfs(root)
+
+    return result
+@
+
+Each chunk is expanded such that the substring that precedes the reference (if any) is included in every line of the expansion.
+This is useful very for maintaining indentation,
+especially in python where whitespace is syntactic.
+
+We also do a little work so that undefined references
+(`<<foo>>` without a corresponding `<<foo>>=`)
+are simply ignored.
+This lets us use them as comments which are removed in the tangled output.
+
+<<tangle>>=
+<<No mistakes in the tango, Donna, not like life>>
+<<If you make a mistake, get all tangled up, just tango on>>
+
+def tangle(self, root):
+    """Expand root into final source code"""
+    expansions = {}
+
+    def __expand(block):
+        expansions[block] = []
+        for line in self.blocks[block]:
+            reference = Web.reference.match(line)
+            if reference:
+                prologue, inner_block = reference.group(1, 2)
+                try:
+                    for line in expansions[inner_block]:
+                        expansions[block].append(prologue + line)
+                except KeyError:
+                    continue
+            else:
+                expansions[block].append(line)
+        if expansions[block][-1] != '':
+            expansions[block].append('')
+
+    for block in [x for x in self.__expansion_order(root) if x in self.blocks]:
+        __expand(block)
+
+    return '\n'.join(expansions[root])
+@
+
 <<program>>=
 <<imports>>
 <<class-definition>>
@@ -65,6 +129,7 @@ Using a class is probably overkill for this application.
 class Web:
     <<patterns>>
     <<weave>>
+    <<tangle>>
     <<method-definitions>>
 @
 
@@ -103,93 +168,6 @@ def __make_dag(self):
                 self.blocks[block_name].append(line)
             except KeyError:
                 self.blocks[block_name] = [line]
-@
-
-`__expansion_order()` does a topological sort on the DAG,
-giving us the order to expand the modules so that dependencies are resolved
-(if `<<foo>>` depends on `<<bar>>`, then `<<bar>>` will always be listed before `<<foo>>`).
-
-<<method-definitions>>=
-
-def __expansion_order(self, target):
-    """Blocks in the order they should be processed to satisfy dependencies"""
-    result = []
-    visited = set()
-
-    def dfs(v):
-        if v not in visited:
-            for next in [e[1] for e in self.dependencies if e[0] == v]:
-                dfs(next)
-            visited.add(v)
-            result.append(v)
-
-    dfs(target)
-
-    return result
-@
-
-`tangle()` takes the specified root module and expands it into the final code.
-Each module is expanded such that the substring that precedes the reference (if any)
-is included in every line of the expansion.
-For example:
-
-<<foo>>=
-/*
- *  <<bar>>
- */
-@
-
-<<bar>>=
-These
-Will be
-Commented
-When Inserted
-@
-
-The expansion yields:
-
-    /*
-     * These
-     * Will be
-     * Commented
-     * When Inserted
-     */
-
-This is useful very for maintaining indentation,
-especially in python where whitespace is syntactic.
-
-We also do a little work so that undefined references
-(`<<foo>>` without a corresponding `<<foo>>=`)
-are simply ignored.
-This lets us use them as comments which are removed in the tangled source.
-
-<<method-definitions>>=
-<<No mistakes in the tango, Donna, not like life>>
-<<If you make a mistake, get all tangled up, just tango on>>
-
-def tangle(self, root):
-    expansions = {}
-
-    def __expand(block):
-        expansions[block] = []
-        for line in self.blocks[block]:
-            reference = Web.reference.match(line)
-            if reference:
-                prologue, inner_block = reference.group(1, 2)
-                try:
-                    for line in expansions[inner_block]:
-                        expansions[block].append(prologue + line)
-                except KeyError:
-                    continue
-            else:
-                expansions[block].append(line)
-        if expansions[block][-1] != '':
-            expansions[block].append('')
-
-    for block in [x for x in self.__expansion_order(root) if x in self.blocks]:
-        __expand(block)
-
-    return '\n'.join(expansions[root])
 @
 
 TODO: update description of main
