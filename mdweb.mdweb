@@ -1,3 +1,22 @@
+@
+# chunks
+A *chunk* is zero or more lines of text that are either *prose* or *code*.
+A prose chunk is signified by a line that starts with `@`.
+A code chunk is signified by a line that starts with `<<chunk name>>=`,
+where *chunk name* is the chunk's identifier.
+We also need a way to refer to other code chunks within a code chunk.
+They will tke the form of `<<chunk name>>` (note the absence of the "=")
+and can appear anywhere in the line.
+Regular expressions give us a convenient way to define these rules.
+
+TODO: enable escaping of << and >>
+
+<<patterns>>=
+prose_block_pat = re.compile(r"^@")
+code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
+reference = re.compile(r"(.*)<{2}(.+)>{2}")
+@
+
 <<program>>=
 <<imports>>
 <<class-definition>>
@@ -14,17 +33,6 @@ class Web:
     <<patterns>>
     <<weave>>
     <<method-definitions>>
-@
-
-We'll use regular expressions to determine which lines signify the start of a new code or prose block, or a reference.
-We define that a code or prose block must have the pattern at the beginning of the line,
-but a reference can be preceded by arbitrary text.
-This will be useful for doing things such as indenting the block.
-
-<<attribute-definitions>>=
-prose_block_pat = re.compile(r"^@")
-code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
-reference = re.compile(r"(.*)<{2}(.+)>{2}")
 @
 
 # weave
