@@ -1,11 +1,11 @@
 import sys, re
-
 class Web:
     prose_block_pat = re.compile(r"^@")
     code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
     reference = re.compile(r"(.*)<{2}(.+)>{2}")
-    
+
     def weave(self):
+        """Markdown-formatted output with code in code blocks"""
         woven = []
         mode = "prose"
         for line in self.source:
@@ -13,29 +13,70 @@ class Web:
             prose_match = Web.prose_block_pat.match(line)
             if code_match:
                 mode = "code"
+                # Add a header to identify the block
                 woven.append('**`' + line + '`**\n')
                 continue
             elif prose_match:
                 mode = "prose"
                 woven.append('\n')
                 continue
-    
+
             if mode == "code":
                 woven.append('    ' + line)
             else:
                 woven.append(line)
-    
+
         return '\n'.join(woven)
-    
-    def __init__(self, source):
-        self.source = source.split('\n')
-        self.blocks = {}
-        self.dependencies = []
-        self.__make_dag()
-        self.roots = [block for block in self.blocks.keys() if block not in
-                      [edge[1] for edge in self.dependencies]]
-    
-    def __make_dag(self):
+
+
+    def __expansion_order(self, root):
+        """Chunks in the order they should be processed to satisfy dependencies"""
+        result = []
+        visited = set()
+
+        def dfs(v):
+            if v not in visited:
+                visited.add(v)
+                for next in [e[1] for e in self.dependencies if e[0] == v]:
+                    dfs(next)
+                result.append(v)
+
+        dfs(root)
+
+        return result
+
+    def tangle(self, root):
+        """Expand root into final source code"""
+        expansions = {}
+
+        def __expand(block):
+            expansions[block] = []
+            for line in self.blocks[block]:
+                reference = Web.reference.match(line)
+                if reference:
+                    prologue, inner_block = reference.group(1, 2)
+                    try:
+                        for line in expansions[inner_block]:
+                            # don't prepend prologue to empty lines
+                            if line:
+                                expansions[block].append(prologue + line)
+                            else:
+                                expansions[block].append(line)
+                    except KeyError: # ignore undefined references
+                        continue
+                else:
+                    expansions[block].append(line)
+            if expansions[block][-1] != '':
+                expansions[block].append('')
+
+        for block in [x for x in self.__expansion_order(root) if x in self.blocks]:
+            __expand(block)
+
+        return '\n'.join(expansions[root])
+
+
+    def __make_graph(self):
+        """Make dependency graph"""
         mode = "prose"
         for line in self.source:
             code_match = Web.code_block_pat.match(line)
@@ -47,7 +88,7 @@ class Web:
             elif prose_match:
                 mode = "prose"
                 continue
-        
+
             if mode == "code":
                 dependence = Web.reference.search(line)
                 if dependence:
@@ -56,47 +97,16 @@ class Web:
                     self.blocks[block_name].append(line)
                 except KeyError:
                     self.blocks[block_name] = [line]
-    
-    def __expansion_order(self, target):
-        """Blocks in the order they should be processed to satisfy dependencies"""
-        result = []
-        visited = set()
-    
-        def dfs(v):
-            if v not in visited:
-                for next in [e[1] for e in self.dependencies if e[0] == v]:
-                    dfs(next)
-                visited.add(v)
-                result.append(v)
-    
-        dfs(target)
-    
-        return result
-    
-    def tangle(self, root):
-        expansions = {}
-    
-        def __expand(block):
-            expansions[block] = []
-            for line in self.blocks[block]:
-                reference = Web.reference.match(line)
-                if reference:
-                    prologue, inner_block = reference.group(1, 2)
-                    try:
-                        for line in expansions[inner_block]:
-                            expansions[block].append(prologue + line)
-                    except KeyError:
-                        continue
-                else:
-                    expansions[block].append(line)
-            if expansions[block][-1] != '':
-                expansions[block].append('')
-    
-        for block in [x for x in self.__expansion_order(root) if x in self.blocks]:
-            __expand(block)
-    
-        return '\n'.join(expansions[root])
-    
+
+
+    def __init__(self, source):
+        self.source = source.split('\n')
+        self.blocks = {} # un-tangled chunks
+        self.dependencies = [] # as (chunk_name, dependency)
+        self.__make_graph()
+        # chunks that don't depend on any other chunks
+        self.roots = [block for block in self.blocks.keys() if block not in
+                      [edge[1] for edge in self.dependencies]]
 
 if __name__ == '__main__':
     help_options = ['-?', '--help']
