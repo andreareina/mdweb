@@ -1,0 +1,213 @@
+<<program>>=
+<<imports>>
+<<class-definition>>
+<<main-method>>
+@
+
+<<imports>>=
+import sys, re
+@
+Using a class is probably overkill for this application.
+
+<<class-definition>>=
+class Web:
+    <<patterns>>
+    <<weave>>
+    <<method-definitions>>
+@
+
+We'll use regular expressions to determine which lines signify the start of a new code or prose block, or a reference.
+We define that a code or prose block must have the pattern at the beginning of the line,
+but a reference can be preceded by arbitrary text.
+This will be useful for doing things such as indenting the block.
+
+<<attribute-definitions>>=
+prose_block_pat = re.compile(r"^@")
+code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
+reference = re.compile(r"(.*)<{2}(.+)>{2}")
+@
+
+# weave
+*Weaving* inserts chunks into code blocks.
+
+<<weave>>=
+def weave(self):
+    woven = []
+    mode = "prose"
+    for line in self.source:
+        code_match = Web.code_block_pat.match(line)
+        prose_match = Web.prose_block_pat.match(line)
+        if code_match:
+            mode = "code"
+            woven.append('**`' + line + '`**\n')
+            continue
+        elif prose_match:
+            mode = "prose"
+            woven.append('\n')
+            continue
+
+        if mode == "code":
+            woven.append('    ' + line)
+        else:
+            woven.append(line)
+
+    return '\n'.join(woven)
+@
+
+<<method-definitions>>=
+def __init__(self, source):
+    self.source = source.split('\n')
+    self.blocks = {}
+    self.dependencies = []
+    self.__make_dag()
+    self.roots = [block for block in self.blocks.keys() if block not in
+                  [edge[1] for edge in self.dependencies]]
+@
+
+`__make_dag()` constructs the dependency graph that tells us what modules depend on what.
+
+<<method-definitions>>=
+
+def __make_dag(self):
+    mode = "prose"
+    for line in self.source:
+        code_match = Web.code_block_pat.match(line)
+        prose_match = Web.prose_block_pat.match(line)
+        if code_match:
+            mode = "code"
+            block_name = code_match.group(1)
+            continue
+        elif prose_match:
+            mode = "prose"
+            continue
+    
+        if mode == "code":
+            dependence = Web.reference.search(line)
+            if dependence:
+                self.dependencies.append((block_name, dependence.group(2)))
+            try:
+                self.blocks[block_name].append(line)
+            except KeyError:
+                self.blocks[block_name] = [line]
+@
+
+`__expansion_order()` does a topological sort on the DAG,
+giving us the order to expand the modules so that dependencies are resolved
+(if `<<foo>>` depends on `<<bar>>`, then `<<bar>>` will always be listed before `<<foo>>`).
+
+<<method-definitions>>=
+
+def __expansion_order(self, target):
+    """Blocks in the order they should be processed to satisfy dependencies"""
+    result = []
+    visited = set()
+
+    def dfs(v):
+        if v not in visited:
+            for next in [e[1] for e in self.dependencies if e[0] == v]:
+                dfs(next)
+            visited.add(v)
+            result.append(v)
+
+    dfs(target)
+
+    return result
+@
+
+`tangle()` takes the specified root module and expands it into the final code.
+Each module is expanded such that the substring that precedes the reference (if any)
+is included in every line of the expansion.
+For example:
+
+<<foo>>=
+/*
+ *  <<bar>>
+ */
+@
+
+<<bar>>=
+These
+Will be
+Commented
+When Inserted
+@
+
+The expansion yields:
+
+    /*
+     * These
+     * Will be
+     * Commented
+     * When Inserted
+     */
+
+This is useful very for maintaining indentation,
+especially in python where whitespace is syntactic.
+
+We also do a little work so that undefined references
+(`<<foo>>` without a corresponding `<<foo>>=`)
+are simply ignored.
+This lets us use them as comments which are removed in the tangled source.
+
+<<method-definitions>>=
+<<No mistakes in the tango, Donna, not like life>>
+<<If you make a mistake, get all tangled up, just tango on>>
+
+def tangle(self, root):
+    expansions = {}
+
+    def __expand(block):
+        expansions[block] = []
+        for line in self.blocks[block]:
+            reference = Web.reference.match(line)
+            if reference:
+                prologue, inner_block = reference.group(1, 2)
+                try:
+                    for line in expansions[inner_block]:
+                        expansions[block].append(prologue + line)
+                except KeyError:
+                    continue
+            else:
+                expansions[block].append(line)
+        if expansions[block][-1] != '':
+            expansions[block].append('')
+
+    for block in [x for x in self.__expansion_order(root) if x in self.blocks]:
+        __expand(block)
+
+    return '\n'.join(expansions[root])
+@
+
+TODO: update description of main
+
+<<main-method>>=
+if __name__ == '__main__':
+    help_options = ['-?', '--help']
+    options = ['--tangle', '--weave'] + help_options
+    usage_message = """Usage: mdweb <--tangle [root] | --weave> <file>"""
+
+    def call_error():
+        print usage_message
+        sys.exit(1)
+
+    if len(sys.argv) < 2 or sys.argv[1] not in options:
+        call_error()
+    elif sys.argv[1] in help_options:
+        print usage_message
+        sys.exit(0)
+
+    file = sys.argv[-1]
+    action = sys.argv[1]
+    with open(file, 'r') as f:
+        web = Web(f.read())
+        if action == '--weave':
+            print web.weave()
+            sys.exit(0)
+        elif action == '--tangle':
+            if len(sys.argv) != 3:
+                root = sys.argv[2]
+            else:
+                root = '*'
+
+            print web.tangle(root)
+@
