@@ -17,6 +17,39 @@ code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
 reference = re.compile(r"(.*)<{2}(.+)>{2}")
 @
 
+# weaving
+*Weaving* produces ready-to-publish Markdown-formatted output.
+Except for code chunks, an mdweb source file is written in Markdown,
+so the only thing to do is wrap code chunks in code blocks.
+
+TODO: enable prose to begin on same line as opening "@"
+
+<<weave>>=
+def weave(self):
+    """Markdown-formatted output with code in code blocks"""
+    woven = []
+    mode = "prose"
+    for line in self.source:
+        code_match = Web.code_block_pat.match(line)
+        prose_match = Web.prose_block_pat.match(line)
+        if code_match:
+            mode = "code"
+            # Add a header to identify the block
+            woven.append('**`' + line + '`**\n')
+            continue
+        elif prose_match:
+            mode = "prose"
+            woven.append('\n')
+            continue
+
+        if mode == "code":
+            woven.append('    ' + line)
+        else:
+            woven.append(line)
+
+    return '\n'.join(woven)
+@
+
 <<program>>=
 <<imports>>
 <<class-definition>>
@@ -33,33 +66,6 @@ class Web:
     <<patterns>>
     <<weave>>
     <<method-definitions>>
-@
-
-# weave
-*Weaving* inserts chunks into code blocks.
-
-<<weave>>=
-def weave(self):
-    woven = []
-    mode = "prose"
-    for line in self.source:
-        code_match = Web.code_block_pat.match(line)
-        prose_match = Web.prose_block_pat.match(line)
-        if code_match:
-            mode = "code"
-            woven.append('**`' + line + '`**\n')
-            continue
-        elif prose_match:
-            mode = "prose"
-            woven.append('\n')
-            continue
-
-        if mode == "code":
-            woven.append('    ' + line)
-        else:
-            woven.append(line)
-
-    return '\n'.join(woven)
 @
 
 <<method-definitions>>=
