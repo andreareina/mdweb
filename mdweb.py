@@ -69,14 +69,25 @@ class Web:
             if expansions[block][-1] != '':
                 expansions[block].append('')
 
-        for block in [x for x in self.__expansion_order(root) if x in self.blocks]:
+        for block in [x for x in self.__expansion_order(root)
+                if x in self.blocks]:
             __expand(block)
 
         return '\n'.join(expansions[root])
 
 
-    def __make_graph(self):
-        """Make dependency graph"""
+    def roots(self):
+        return [block for blocks in self.blocks.keys()
+                if block not in [edge[1] for edge in self.dependencies]]
+
+
+    def __init__(self, source):
+        # source chunks and dependency graph
+        self.source = source.split('\n')
+        self.blocks = {} # un-tangled chunks
+        self.dependencies = [] # as (chunk_name, dependency)
+
+        # read in source and make dependency graph
         mode = "prose"
         for line in self.source:
             code_match = Web.code_block_pat.match(line)
@@ -97,16 +108,6 @@ class Web:
                     self.blocks[block_name].append(line)
                 except KeyError:
                     self.blocks[block_name] = [line]
-
-
-    def __init__(self, source):
-        self.source = source.split('\n')
-        self.blocks = {} # un-tangled chunks
-        self.dependencies = [] # as (chunk_name, dependency)
-        self.__make_graph()
-        # chunks that don't depend on any other chunks
-        self.roots = [block for block in self.blocks.keys() if block not in
-                      [edge[1] for edge in self.dependencies]]
 
 if __name__ == '__main__':
     help_options = ['-?', '--help']
