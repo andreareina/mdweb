@@ -1,5 +1,13 @@
 @
-# chunks
+# mdweb
+Not to be confused with WebMD!
+
+*mdweb* is a tool for literate programming in Python.
+It has basic support for [*noweb*](http://www.cs.tufts.edu/~nr/noweb/) syntax,
+specifically *tangling* to source code,
+and and *weaving* to Markdown (as opposed to LaTeX) for human consumption.
+
+## chunks
 A *chunk* is zero or more lines of text that are either *prose* or *code*.
 A prose chunk is signified by a line that starts with `@`.
 A code chunk is signified by a line that starts with `<<chunk name>>=`,
@@ -17,7 +25,7 @@ code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
 reference = re.compile(r"(.*)<{2}(.+)>{2}")
 @
 
-# weaving
+## weaving
 *Weaving* produces ready-to-publish Markdown-formatted output.
 Except for code chunks, an mdweb source file is written in Markdown,
 so the only thing to do is wrap code chunks in code blocks.
@@ -50,7 +58,7 @@ def weave(self):
     return '\n'.join(woven)
 @
 
-# tangling
+## tangling
 *Tangling* the specified root chunk expands it into the final code.
 We expect the root chunk to contain references to other chunks which must be expanded,
 which themselves may contain references to other chunks which must be expanded and so on.
@@ -119,7 +127,7 @@ def tangle(self, root):
     return '\n'.join(expansions[root])
 @
 
-# finding roots
+## finding roots
 It'll be nice to get a listing of all the roots in the source.
 A root is defined as a chunk that is not a dependency of any other chunk.
 
@@ -130,7 +138,7 @@ def roots(self):
             if block not in [edge[1] for edge in self.dependencies]]
 @
 
-# Putting it all together
+## Putting it all together
 
 Using a class is probably overkill for this application,
 but it keeps the data nicely contained and easy to refer to.
@@ -172,13 +180,16 @@ class Web:
                     self.blocks[block_name] = [line]
 @
 
-TODO: update description of main
+## Supported operations
+
+* **tangling** `python mdweb.py --tangle <root> <file>`
+* **weaving** `python mdweb.py --weave <file>`
 
 <<main method>>=
 if __name__ == '__main__':
     help_options = ['-?', '--help']
     options = ['--tangle', '--weave'] + help_options
-    usage_message = """Usage: mdweb <--tangle [root] | --weave> <file>"""
+    usage_message = """Usage: mdweb ((--tangle <root>) | --weave) <file>"""
 
     def call_error():
         print usage_message

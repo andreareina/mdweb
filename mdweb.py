@@ -112,7 +112,7 @@ class Web:
 if __name__ == '__main__':
     help_options = ['-?', '--help']
     options = ['--tangle', '--weave'] + help_options
-    usage_message = """Usage: mdweb <--tangle [root] | --weave> <file>"""
+    usage_message = """Usage: mdweb ((--tangle <root>) | --weave) <file>"""
 
     def call_error():
         print usage_message
