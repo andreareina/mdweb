@@ -206,13 +206,13 @@ but it keeps the data nicely contained and easy to refer to.
         usage_message = """Usage: mdweb ((--tangle <root>) | --weave) <file>"""
     
         def call_error():
-            print usage_message
+            print(usage_message)
             sys.exit(1)
     
         if len(sys.argv) < 2 or sys.argv[1] not in options:
             call_error()
         elif sys.argv[1] in help_options:
-            print usage_message
+            print(usage_message)
             sys.exit(0)
     
         file = sys.argv[-1]
@@ -220,7 +220,7 @@ but it keeps the data nicely contained and easy to refer to.
         with open(file, 'r') as f:
             web = Web(f.read())
             if action == '--weave':
-                print web.weave()
+                print(web.weave())
                 sys.exit(0)
             elif action == '--tangle':
                 if len(sys.argv) != 3:
@@ -228,12 +228,13 @@ but it keeps the data nicely contained and easy to refer to.
                 else:
                     root = '*'
     
-                print web.tangle(root)
+                print(web.tangle(root))
 
 
 
 **`<<program>>=`**
 
+    from __future__ import print_function
     import sys, re
     <<class definition>>
     <<main method>>
