@@ -205,15 +205,13 @@ but it keeps the data nicely contained and easy to refer to.
         options = ['--tangle', '--weave'] + help_options
         usage_message = """Usage: mdweb ((--tangle <root>) | --weave) <file>"""
     
-        def call_error():
-            print(usage_message)
+        if (
+                len(sys.argv) < 2
+                or sys.argv[1] not in options
+                or sys.argv[1] in help_options
+        ):
+            print(usage_message, file=sys.stderr)
             sys.exit(1)
-    
-        if len(sys.argv) < 2 or sys.argv[1] not in options:
-            call_error()
-        elif sys.argv[1] in help_options:
-            print(usage_message)
-            sys.exit(0)
     
         file = sys.argv[-1]
         action = sys.argv[1]
