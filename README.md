@@ -195,45 +195,52 @@ but it keeps the data nicely contained and easy to refer to.
 
 ## Supported operations
 
-* **tangling** `python mdweb.py --tangle <root> <file>`
-* **weaving** `python mdweb.py --weave <file>`
+* **tangling** `python mdweb.py --tangle <root> [file]`
+* **weaving** `python mdweb.py --weave [file]`
+
+Following the common idiom for command-line tools, if `file` is absent (or "-") `mdweb` reads from standard input.
 
 **`<<main method>>=`**
 
     if __name__ == '__main__':
-        help_options = ['-?', '--help']
-        options = ['--tangle', '--weave'] + help_options
-        usage_message = """Usage: mdweb ((--tangle <root>) | --weave) <file>"""
+        import argparse
+        import sys
+        parser = argparse.ArgumentParser(description="Weave and tangle files")
+        action = parser.add_mutually_exclusive_group(required=True)
+        action.add_argument(
+            '--weave',
+            action='store_true',
+            help="""Produce markdown from input file""",
+        )
+        action.add_argument(
+            '--tangle',
+            action='store',
+            metavar='root',
+            help="""Tangle the named code block into code""",
+        )
+        parser.add_argument(
+            'infile',
+            type=argparse.FileType('r'),
+            default=sys.stdin,
+            nargs='?',
+            help="Input filename; reads from standard input if absent",
+        )
     
-        if (
-                len(sys.argv) < 2
-                or sys.argv[1] not in options
-                or sys.argv[1] in help_options
-        ):
-            print(usage_message, file=sys.stderr)
-            sys.exit(1)
-    
-        file = sys.argv[-1]
-        action = sys.argv[1]
-        with open(file, 'r') as f:
-            web = Web(f.read())
-            if action == '--weave':
-                print(web.weave())
-                sys.exit(0)
-            elif action == '--tangle':
-                if len(sys.argv) != 3:
-                    root = sys.argv[2]
-                else:
-                    root = '*'
-    
-                print(web.tangle(root))
+        args = parser.parse_args()
+        web = Web(args.infile.read())
+        if args.weave:
+            print(web.weave())
+            sys.exit(0)
+        else:
+            print(web.tangle(args.tangle))
+            sys.exit(0)
 
 
 
 **`<<program>>=`**
 
     from __future__ import print_function
-    import sys, re
+    import re
     <<class definition>>
     <<main method>>
 
