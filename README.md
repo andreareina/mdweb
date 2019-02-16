@@ -8,7 +8,7 @@ It has basic support for [*noweb*](http://www.cs.tufts.edu/~nr/noweb/) syntax,
 specifically *tangling* to source code,
 and and *weaving* to Markdown (as opposed to LaTeX) for human consumption.
 
-## chunks
+## Chunks
 A *chunk* is zero or more lines of text that are either *prose* or *code*.
 A prose chunk is signified by a line that starts with `@`.
 A code chunk is signified by a line that starts with `<<chunk name>>=`,
@@ -28,7 +28,7 @@ TODO: enable escaping of << and >>
 
 
 
-## weaving
+## Weaving
 *Weaving* produces ready-to-publish Markdown-formatted output.
 Except for code chunks, an mdweb source file is written in Markdown,
 so the only thing to do is wrap code chunks in code blocks.
@@ -63,7 +63,7 @@ TODO: enable prose to begin on same line as opening "@"
 
 
 
-## tangling
+## Tangling
 *Tangling* the specified root chunk expands it into the final code.
 We expect the root chunk to contain references to other chunks which must be expanded,
 which themselves may contain references to other chunks which must be expanded and so on.
@@ -136,7 +136,7 @@ This lets us use them as comments which are removed in the tangled output.
 
 
 
-## finding roots
+## Finding roots
 It'll be nice to get a listing of all the roots in the source.
 A root is defined as a chunk that is not a dependency of any other chunk.
 

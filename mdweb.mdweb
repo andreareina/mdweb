@@ -7,7 +7,7 @@ It has basic support for [*noweb*](http://www.cs.tufts.edu/~nr/noweb/) syntax,
 specifically *tangling* to source code,
 and and *weaving* to Markdown (as opposed to LaTeX) for human consumption.
 
-## chunks
+## Chunks
 A *chunk* is zero or more lines of text that are either *prose* or *code*.
 A prose chunk is signified by a line that starts with `@`.
 A code chunk is signified by a line that starts with `<<chunk name>>=`,
@@ -25,7 +25,7 @@ code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
 reference = re.compile(r"(.*)<{2}(.+)>{2}")
 @
 
-## weaving
+## Weaving
 *Weaving* produces ready-to-publish Markdown-formatted output.
 Except for code chunks, an mdweb source file is written in Markdown,
 so the only thing to do is wrap code chunks in code blocks.
@@ -58,7 +58,7 @@ def weave(self):
     return '\n'.join(woven)
 @
 
-## tangling
+## Tangling
 *Tangling* the specified root chunk expands it into the final code.
 We expect the root chunk to contain references to other chunks which must be expanded,
 which themselves may contain references to other chunks which must be expanded and so on.
@@ -127,7 +127,7 @@ def tangle(self, root):
     return '\n'.join(expansions[root])
 @
 
-## finding roots
+## Finding roots
 It'll be nice to get a listing of all the roots in the source.
 A root is defined as a chunk that is not a dependency of any other chunk.
 
