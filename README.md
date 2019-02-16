@@ -232,8 +232,12 @@ Following the common idiom for command-line tools, if `file` is absent (or "-") 
             print(web.weave())
             sys.exit(0)
         else:
-            print(web.tangle(args.tangle))
-            sys.exit(0)
+            try:
+                print(web.tangle(args.tangle))
+                sys.exit(0)
+            except KeyError:
+                print("Source block '%s' not found" % args.tangle, file=sys.stderr)
+                sys.exit(1)
 
 
 
