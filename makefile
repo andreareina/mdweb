@@ -1,4 +1,7 @@
-all: mdweb.py
+all: mdweb.py README.md
+
+README.md: mdweb.mdweb
+	mdweb --weave mdweb.mdweb > README.md
 
 mdweb.py: mdweb.mdweb
 	mdweb --tangle program mdweb.mdweb > mdweb.py
