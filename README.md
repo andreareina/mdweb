@@ -262,7 +262,7 @@ Following the common idiom for command-line tools, if `file` is absent (or "-") 
 
 
 
-**`<<program>>=`**
+**`<<mdweb.py>>=`**
 
     from __future__ import print_function
     import re

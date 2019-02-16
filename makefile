@@ -4,11 +4,11 @@ README.md: mdweb.mdweb
 	mdweb --weave mdweb.mdweb > README.md
 
 mdweb.py: mdweb.mdweb
-	mdweb --tangle program mdweb.mdweb > mdweb.py
+	mdweb --tangle mdweb.py mdweb.mdweb > mdweb.py
 
 test: mdweb.py
-	mdweb --tangle program mdweb.mdweb > /tmp/a
-	python mdweb.py --tangle program mdweb.mdweb > /tmp/b
+	mdweb --tangle mdweb.py mdweb.mdweb > /tmp/a
+	python mdweb.py --tangle mdweb.py mdweb.mdweb > /tmp/b
 	diff -u /tmp/a /tmp/b
 
 install: mdweb.py
