@@ -224,6 +224,12 @@ Following the common idiom for command-line tools, if `file` is absent (or "-") 
             metavar='root',
             help="""Tangle the named code block into code""",
         )
+        action.add_argument(
+            '--tangle-all',
+            action='store_true',
+            help="""Tangle all top-level code blocks and write the results to the
+            filesystem. The filename will be the same as the code block name.""",
+        )
         parser.add_argument(
             'infile',
             type=argparse.FileType('r'),
@@ -234,16 +240,24 @@ Following the common idiom for command-line tools, if `file` is absent (or "-") 
     
         args = parser.parse_args()
         web = Web(args.infile.read())
+    
         if args.list:
             print('\n'.join(web.roots()))
+    
         elif args.weave:
             print(web.weave())
+    
+        elif args.tangle_all:
+            for filename in web.roots():
+                with open(filename, 'w') as f:
+                    f.write(web.tangle(filename))
         else:
             try:
                 print(web.tangle(args.tangle))
             except KeyError:
                 print("Source block '%s' not found" % args.tangle, file=sys.stderr)
                 sys.exit(1)
+    
         sys.exit(0)
 
 
