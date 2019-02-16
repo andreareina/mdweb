@@ -78,7 +78,8 @@ class Web:
 
 
     def roots(self):
-        return [block for blocks in self.blocks.keys()
+        """List of code chunks that are not dependencies of other chunks"""
+        return [block for block in self.blocks.keys()
                 if block not in [edge[1] for edge in self.dependencies]]
 
 
@@ -116,6 +117,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Weave and tangle files")
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument(
+        '--list',
+        action='store_true',
+        help="""List top-level code blocks, one per line""",
+    )
+    action.add_argument(
         '--weave',
         action='store_true',
         help="""Produce markdown from input file""",
@@ -136,14 +142,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     web = Web(args.infile.read())
-    if args.weave:
+    if args.list:
+        print('\n'.join(web.roots()))
+    elif args.weave:
         print(web.weave())
-        sys.exit(0)
     else:
         try:
             print(web.tangle(args.tangle))
-            sys.exit(0)
         except KeyError:
             print("Source block '%s' not found" % args.tangle, file=sys.stderr)
             sys.exit(1)
+    sys.exit(0)
 
