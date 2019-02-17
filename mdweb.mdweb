@@ -20,9 +20,9 @@ Regular expressions give us a convenient way to define these rules.
 TODO: enable escaping of << and >>
 
 <<patterns>>=
-prose_block_pat = re.compile(r"^@")
-code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
-reference = re.compile(r"(.*)<{2}(.+)>{2}")
+prose_start = re.compile(r"^@")
+code_start = re.compile(r"^<{2}(.+)>{2}=")
+code_ref = re.compile(r"(.*)<{2}(.+)>{2}")
 @
 
 ## Weaving
@@ -38,8 +38,8 @@ def weave(self):
     woven = []
     mode = "prose"
     for line in self.source:
-        code_match = Web.code_block_pat.match(line)
-        prose_match = Web.prose_block_pat.match(line)
+        code_match = Web.code_start.match(line)
+        prose_match = Web.prose_start.match(line)
         if code_match:
             mode = "code"
             # Add a header to identify the block
@@ -103,7 +103,7 @@ def tangle(self, root):
     def __expand(block):
         expansions[block] = []
         for line in self.blocks[block]:
-            reference = Web.reference.match(line)
+            reference = Web.code_ref.match(line)
             if reference:
                 prologue, inner_block = reference.group(1, 2)
                 try:
@@ -161,8 +161,8 @@ class Web:
         # read in source and make dependency graph
         mode = "prose"
         for line in self.source:
-            code_match = Web.code_block_pat.match(line)
-            prose_match = Web.prose_block_pat.match(line)
+            code_match = Web.code_start.match(line)
+            prose_match = Web.prose_start.match(line)
             if code_match:
                 mode = "code"
                 block_name = code_match.group(1)
@@ -172,7 +172,7 @@ class Web:
                 continue
 
             if mode == "code":
-                dependence = Web.reference.search(line)
+                dependence = Web.code_ref.search(line)
                 if dependence:
                     self.dependencies.append((block_name, dependence.group(2)))
                 try:

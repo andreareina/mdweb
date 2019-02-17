@@ -22,9 +22,9 @@ TODO: enable escaping of << and >>
 
 **`<<patterns>>=`**
 
-    prose_block_pat = re.compile(r"^@")
-    code_block_pat = re.compile(r"^<{2}(.+)>{2}=")
-    reference = re.compile(r"(.*)<{2}(.+)>{2}")
+    prose_start = re.compile(r"^@")
+    code_start = re.compile(r"^<{2}(.+)>{2}=")
+    code_ref = re.compile(r"(.*)<{2}(.+)>{2}")
 
 
 
@@ -42,8 +42,8 @@ TODO: enable prose to begin on same line as opening "@"
         woven = []
         mode = "prose"
         for line in self.source:
-            code_match = Web.code_block_pat.match(line)
-            prose_match = Web.prose_block_pat.match(line)
+            code_match = Web.code_start.match(line)
+            prose_match = Web.prose_start.match(line)
             if code_match:
                 mode = "code"
                 # Add a header to identify the block
@@ -111,7 +111,7 @@ This lets us use them as comments which are removed in the tangled output.
         def __expand(block):
             expansions[block] = []
             for line in self.blocks[block]:
-                reference = Web.reference.match(line)
+                reference = Web.code_ref.match(line)
                 if reference:
                     prologue, inner_block = reference.group(1, 2)
                     try:
@@ -173,8 +173,8 @@ but it keeps the data nicely contained and easy to refer to.
             # read in source and make dependency graph
             mode = "prose"
             for line in self.source:
-                code_match = Web.code_block_pat.match(line)
-                prose_match = Web.prose_block_pat.match(line)
+                code_match = Web.code_start.match(line)
+                prose_match = Web.prose_start.match(line)
                 if code_match:
                     mode = "code"
                     block_name = code_match.group(1)
@@ -184,7 +184,7 @@ but it keeps the data nicely contained and easy to refer to.
                     continue
     
                 if mode == "code":
-                    dependence = Web.reference.search(line)
+                    dependence = Web.code_ref.search(line)
                     if dependence:
                         self.dependencies.append((block_name, dependence.group(2)))
                     try:
